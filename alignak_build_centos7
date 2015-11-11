@@ -1,0 +1,9 @@
+FROM centos:7
+
+RUN yum update -y
+RUN yum install -y epel-release
+
+# lsb-release is for guessing OS when building package
+RUN yum install -y rpm-build git python-pbr python-devel vim redhat-lsb-core python-setuptools
+ADD ./build-alignak /usr/bin
+

@@ -1,0 +1,73 @@
+#!/bin/bash
+
+get_distro(){
+    DISTRO=$(lsb_release -i | cut -f 2 | tr [A-Z] [a-z])
+
+    if [[ $? -ne 0 ]]; then
+       DISTRO=$(head -1 /etc/issue | cut -f 1 -d " " | tr [A-Z] [a-z])
+    fi
+
+    echo $DISTRO
+}
+
+get_version(){
+    VERSION=$(lsb_release -r |  cut -f 2 | cut -f 1 -d ".")
+
+    if [[ $? -ne 0 ]]; then
+       if [[ -f /etc/issue ]]; then
+           VERSION=$(head -1 /etc/issue | cut -f 3 -d " " )
+       else
+           VERSION=$(cat /etc/redhat-release | cut -f 4 -d " " | cut -f 1 -d ".")
+       fi
+    fi
+
+    echo $VERSION
+}
+
+
+DISTRO=$(get_distro)
+VERSION=$(get_version)
+OUT_DIR=/root/build-dir/$DISTRO_$VERSION
+
+build_alignak_deb(){
+    cp -r ~/alignak-packaging/debian ~/alignak-packaging/manpages ~/alignak
+    cd ~/alignak
+    RELEASE=$(git log -1  --format=%ct.%h)
+    cd ../
+    VERSION=$(awk -F'\(?\-?' '/alignak/ {print $2}' alignak/debian/changelog)
+    sed -i "s/-\([0-9]\+\))/-\1.$RELEASE)/g" alignak/debian/changelog
+    tar -czf alignak_$VERSION.orig.tar.gz alignak
+    cd alignak
+    dpkg-buildpackage
+    mv ../alignak*.deb /root/build-dir/
+
+    #TODO add lintian and grep W|E to count them
+}
+
+build_alignak_rpm(){
+    cp -r ~/alignak-packaging/debian ~/alignak-packaging/manpages ~/alignak
+    # You will package current develop here, if you need master or specific checkout what you need 
+    cd ~/alignak
+    RELEASE=$(git log -1  --format=%ct_%h)
+    cd ../
+    VERSION=$(awk '/Version/ {print $2}' ~/alignak-packaging/alignak.spec)
+    sed -i "s/\(Release:.*\)$/\1_$RELEASE/g" ~/alignak-packaging/alignak.spec
+    mkdir -p ~/rpmbuild/SOURCES
+    tar -czf ~/rpmbuild/SOURCES/alignak-$VERSION.tar.gz alignak
+    rpmbuild -ba  ~/alignak-packaging/alignak.spec
+    mv ~rpmbuild/RPMS/x86_64/*.rpm /root/build-dir/ 
+
+    #TODO add rpmlint and grep W|E to count them
+}
+
+case $DISTRO in
+    debian|ubuntu)
+        build_alignak_deb
+        ;;
+    fedora|centos|redhat)
+        build_alignak_rpm
+        ;;
+    *)
+        exit 1
+        ;;
+esac
