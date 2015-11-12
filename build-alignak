@@ -24,48 +24,82 @@ get_version(){
     echo $VERSION
 }
 
-
-DISTRO=$(get_distro)
-VERSION=$(get_version)
-OUT_DIR=/root/build-dir/$DISTRO_$VERSION
-
 build_alignak_deb(){
     cp -r ~/alignak-packaging/debian ~/alignak-packaging/manpages ~/alignak
-    cd ~/alignak
-    RELEASE=$(git log -1  --format=%ct.%h)
-    cd ../
+    cd
     VERSION=$(awk -F'\(?\-?' '/alignak/ {print $2}' alignak/debian/changelog)
-    sed -i "s/-\([0-9]\+\))/-\1.$RELEASE)/g" alignak/debian/changelog
+    if [[ -z $1 ]]; then 
+        # We only create a "current" version for upstream build
+        cd alignak
+        RELEASE=$(git log -1  --format=%ct.%h)
+        cd ../
+        sed -i "s/-\([0-9]\+\))/-\1.$RELEASE)/g" alignak/debian/changelog
+    fi
     tar -czf alignak_$VERSION.orig.tar.gz alignak
     cd alignak
     dpkg-buildpackage
-    mv ../alignak*.deb /root/build-dir/
+    mv ../alignak*.deb $OUT_DIR
 
     #TODO add lintian and grep W|E to count them
 }
 
 build_alignak_rpm(){
     cp -r ~/alignak-packaging/debian ~/alignak-packaging/manpages ~/alignak
-    # You will package current develop here, if you need master or specific checkout what you need 
-    cd ~/alignak
-    RELEASE=$(git log -1  --format=%ct_%h)
-    cd ../
+    cd
     VERSION=$(awk '/Version/ {print $2}' ~/alignak-packaging/alignak.spec)
-    sed -i "s/\(Release:.*\)$/\1_$RELEASE/g" ~/alignak-packaging/alignak.spec
+    if [[ -z $1 ]]; then
+        # We only create a "current" version for upstream build
+        cd alignak
+        RELEASE=$(git log -1  --format=%ct_%h)
+        cd ../
+        sed -i "s/\(Release:.*\)$/\1_$RELEASE/g" ~/alignak-packaging/alignak.spec
+    fi
     mkdir -p ~/rpmbuild/SOURCES
     tar -czf ~/rpmbuild/SOURCES/alignak-$VERSION.tar.gz alignak
     rpmbuild -ba  ~/alignak-packaging/alignak.spec
-    mv ~rpmbuild/RPMS/x86_64/*.rpm /root/build-dir/ 
+    mv ~/rpmbuild/RPMS/x86_64/*.rpm $OUT_DIR
 
     #TODO add rpmlint and grep W|E to count them
 }
 
+prepare_upstream(){
+    cd ~/alignak-packaging/
+    git fetch origin
+    git checkout -f origin/master -B master
+    cd ~/alignak
+    git fetch origin
+    git checkout -f origin/develop -B develop
+
+}
+
+prepare_tag(){
+    cd ~/alignak-packaging/
+    git fetch origin
+    git checkout $1 -b $1 
+    cd ~/alignak
+    git fetch origin
+    git checkout $1 -b $1 
+
+}
+
+TAG=$1
+DISTRO=$(get_distro)
+VERSION=$(get_version)
+OUT_DIR=/root/build-dir/${DISTRO}_${VERSION}
+mkdir -p $OUT_DIR
+
+if [[ -z $TAG ]]; then
+    prepare_upstream
+else
+    prepare_tag $TAG
+fi
+
 case $DISTRO in
     debian|ubuntu)
-        build_alignak_deb
+        build_alignak_deb $TAG
         ;;
     fedora|centos|redhat)
-        build_alignak_rpm
+        build_alignak_rpm $TAG
         ;;
     *)
         exit 1

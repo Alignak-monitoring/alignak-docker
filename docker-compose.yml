@@ -1,12 +1,9 @@
 
-
 alignak_build_d8:
     build: .
     dockerfile: alignak_build_d8
     command : bash /usr/bin/build-alignak
     volumes:
-    - ../alignak:/root/alignak
-    - ../alignak-packaging:/root/alignak-packaging
     - /tmp/build-dir:/root/build-dir
 
 alignak_build_centos7:
@@ -14,6 +11,20 @@ alignak_build_centos7:
     dockerfile: alignak_build_centos7
     command : bash /usr/bin/build-alignak
     volumes:
-    - ../alignak:/root/alignak
-    - ../alignak-packaging:/root/alignak-packaging
     - /tmp/build-dir:/root/build-dir
+
+alignak_build_ubuntu14:
+    build: .
+    dockerfile: alignak_build_ubuntu14
+    command : bash /usr/bin/build-alignak
+    volumes:
+    - /tmp/build-dir:/root/build-dir
+
+alignak_build_ubuntu12:
+    build: .
+    dockerfile: alignak_build_ubuntu12
+    command : bash /usr/bin/build-alignak
+    volumes:
+    - /tmp/build-dir:/root/build-dir
+
+
