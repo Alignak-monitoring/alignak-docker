@@ -14,7 +14,7 @@ get_version(){
     VERSION=$(lsb_release -r |  cut -f 2 | cut -f 1 -d ".")
 
     if [[ $? -ne 0 ]]; then
-       if [[ -f /etc/issue ]]; then
+       if [[ ! -f /etc/redhat-release  ]]; then
            VERSION=$(head -1 /etc/issue | cut -f 3 -d " " )
        else
            VERSION=$(cat /etc/redhat-release | cut -f 4 -d " " | cut -f 1 -d ".")
@@ -22,6 +22,20 @@ get_version(){
     fi
 
     echo $VERSION
+}
+
+get_codename(){
+    CODENAME=$(lsb_release -c | cut -f 2)
+    ret=$?
+
+    if [[ "$CODENAME" == "Core" ]]; then
+       CODENAME="el"$VERSION
+    elif [[ $ret -ne 0 ]]; then
+       CODENAME=$(grep "VERSION="  /etc/os-release | sed 's/.*(\([a-z]\+\))"/\1/g')
+    fi
+
+    echo $CODENAME
+
 }
 
 build_alignak_deb(){
@@ -34,6 +48,8 @@ build_alignak_deb(){
         RELEASE=$(git log -1  --format=%ct.%h)
         cd ../
         sed -i "s/-\([0-9]\+\))/-\1.$RELEASE)/g" alignak/debian/changelog
+    else
+        sed -i "s/-\([0-9]\+\))/-\1~$CODENAME)/g" alignak/debian/changelog
     fi
     tar -czf alignak_$VERSION.orig.tar.gz alignak
     cd alignak
@@ -57,7 +73,9 @@ build_alignak_rpm(){
     mkdir -p ~/rpmbuild/SOURCES
     tar -czf ~/rpmbuild/SOURCES/alignak-$VERSION.tar.gz alignak
     rpmbuild -ba  ~/alignak-packaging/alignak.spec
-    mv ~/rpmbuild/RPMS/x86_64/*.rpm $OUT_DIR
+    rm -rf ~/rpmbuild/RPMS/x86_64/*debuginfo*.rpm
+    new_name=$(basename ~/rpmbuild/RPMS/x86_64/*.rpm | sed "s/\(.*\).x86_64.rpm/\1.$CODENAME.x86_64.rpm/g")
+    mv ~/rpmbuild/RPMS/x86_64/*.rpm $OUT_DIR/$new_name
 
     #TODO add rpmlint and grep W|E to count them
 }
@@ -82,9 +100,10 @@ prepare_tag(){
 
 }
 
-TAG=$1
+# We have a global variable TAG
 DISTRO=$(get_distro)
 VERSION=$(get_version)
+CODENAME=$(get_codename)
 OUT_DIR=/root/build-dir/${DISTRO}_${VERSION}
 mkdir -p $OUT_DIR
 
