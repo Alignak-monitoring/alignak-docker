@@ -41,7 +41,7 @@ get_codename(){
 build_alignak_deb(){
     cp -r ~/alignak-packaging/debian ~/alignak-packaging/manpages ~/alignak
     cd
-    VERSION=$(awk -F'\(?\-?' '/alignak/ {print $2}' alignak/debian/changelog)
+    VERSION=$(awk -F'\(?\-?' '/alignak/ {print $2}' alignak/debian/changelog | head -1)
     if [[ -z $1 ]]; then 
         # We only create a "current" version for upstream build
         cd alignak
