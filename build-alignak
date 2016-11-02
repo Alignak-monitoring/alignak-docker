@@ -67,7 +67,7 @@ build_alignak_deb(){
 }
 
 build_alignak_rpm(){
-    cp -r ~/alignak-packaging/debian ~/alignak-packaging/manpages ~/alignak
+    cp -r ~/alignak-packaging/debian ~/alignak-packaging/manpages ~/alignak-packaging/systemd ~/alignak
     cd
     VERSION=$(awk '/Version/ {print $2}' ~/alignak-packaging/alignak.spec)
     if [[ -z $1 ]]; then
