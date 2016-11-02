@@ -100,10 +100,15 @@ prepare_upstream(){
 prepare_tag(){
     cd ~/alignak-packaging/
     git fetch origin
-    git checkout $1 -b b$1 
+    git checkout $1
+    # Checking out a tag wont create a branch
+    # And having a branch named as a tag is not a good idea
+    # This line is kinda useless when checking out another branch
+    git checkout -b b$1
     cd ~/alignak
     git fetch origin
-    git checkout $1 -b b$1 
+    git checkout $1
+    git checkout -b b$1
 
 }
 
