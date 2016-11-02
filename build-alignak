@@ -41,10 +41,10 @@ get_codename(){
 build_alignak_deb(){
     cp -r ~/alignak-packaging/debian ~/alignak-packaging/manpages ~/alignak-packaging/systemd ~/alignak
     if [[ $SYSTEMD_FILES -eq 0 ]]; then
-        sed -i 's/^systemd/#systemd/' alignak/debian/alignak-all.install  # Comment systemd files
-        sed -i 's/^#bin/bin/' alignak/debian/alignak-all.install # Uncomment init scripts
-        sed -i 's/#mv /mv /' alignak/debian/rules  # Uncomment etc/default move
-        sed -i 's/#//' alignak/debian/patches/series
+        sed -i 's/^systemd/#systemd/' ~/alignak/debian/alignak-all.install  # Comment systemd files
+        sed -i 's/^#bin/bin/' ~/alignak/debian/alignak-all.install # Uncomment init scripts
+        sed -i 's/#mv /mv /' ~/alignak/debian/rules  # Uncomment etc/default move
+        sed -i 's/#//' ~/alignak/debian/patches/series
     fi
 
     cd
