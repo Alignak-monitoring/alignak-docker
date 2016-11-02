@@ -2,7 +2,7 @@
 alignak_build_d8:
     build: .
     environment:
-        TAG: "0.1"
+        TAG: "0.2"
     dockerfile: alignak_build_d8
     command : bash /usr/bin/build-alignak
     volumes:
@@ -11,8 +11,17 @@ alignak_build_d8:
 alignak_build_centos7:
     build: .
     environment:
-        TAG: "0.1"
+        TAG: "0.2"
     dockerfile: alignak_build_centos7
+    command : bash /usr/bin/build-alignak
+    volumes:
+    - /tmp/build-dir:/root/build-dir
+
+alignak_build_ubuntu16:
+    build: .
+    environment:
+        TAG: "0.2"
+    dockerfile: alignak_build_ubuntu16
     command : bash /usr/bin/build-alignak
     volumes:
     - /tmp/build-dir:/root/build-dir
@@ -20,7 +29,7 @@ alignak_build_centos7:
 alignak_build_ubuntu14:
     build: .
     environment:
-        TAG: "0.1"
+        TAG: "0.2"
     dockerfile: alignak_build_ubuntu14
     command : bash /usr/bin/build-alignak
     volumes:
@@ -29,7 +38,8 @@ alignak_build_ubuntu14:
 alignak_build_ubuntu12:
     build: .
     environment:
-        TAG: "0.1"
+        TAG: "0.2"
+        SYSTEMD_FILES: 0
     dockerfile: alignak_build_ubuntu12
     command : bash /usr/bin/build-alignak
     volumes:
