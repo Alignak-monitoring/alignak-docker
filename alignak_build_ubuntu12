@@ -1,9 +1,0 @@
-FROM ubuntu:12.04
-
-RUN apt-get update
-# lsb-release is for guessing OS when building package
-RUN apt-get install -y debhelper git-buildpackage python-pip quilt vim lsb-release
-RUN pip install pbr
-RUN git clone https://github.com/Alignak-monitoring/alignak.git /root/alignak
-RUN git clone https://github.com/Alignak-monitoring/alignak-packaging.git /root/alignak-packaging
-ADD ./build-alignak /usr/bin/

@@ -1,10 +1,7 @@
 #!/bin/bash
 
-#DISTRO="jessie trusty precise"
-
 echo "======================"
 echo $(date)
-
 echo "======================"
 
 cd ~/repos/alignak-monitoring.github.io/
@@ -15,9 +12,7 @@ rm -rf ~/repos/alignak-monitoring.github.io/build/*
 
 cd ~/repos/alignak-docker/
 git pull
-sed -i 's/TAG:.*/TAG: ""/g' docker-compose.yml
-sudo docker-compose rm -f
-sudo docker-compose up
+sudo make package
 
 cp -r /tmp/build-dir/* ~/repos/alignak-monitoring.github.io/build/
 

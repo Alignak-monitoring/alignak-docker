@@ -5,7 +5,6 @@ RUN yum install -y epel-release
 
 # lsb-release is for guessing OS when building package
 RUN yum install -y rpm-build git python-pbr python-devel vim redhat-lsb-core python-setuptools
-RUN git clone https://github.com/Alignak-monitoring/alignak.git /root/alignak
-RUN git clone https://github.com/Alignak-monitoring/alignak-packaging.git /root/alignak-packaging
-ADD ./build-alignak /usr/bin
+ADD ./build-package.sh /root/
+RUN chmod +x /root/build-package.sh
 

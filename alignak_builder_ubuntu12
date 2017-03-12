@@ -1,0 +1,8 @@
+FROM ubuntu:12.04
+
+RUN apt-get update
+# lsb-release is for guessing OS when building package
+RUN apt-get install -y debhelper git-buildpackage python-pip quilt vim lsb-release
+RUN pip install pbr
+ADD ./build-package.sh /root/
+RUN chmod +x /root/build-package.sh
