@@ -43,11 +43,12 @@ is_git_tag(){
 }
 
 build_package_deb(){
+    cd $SRC_DIR
     [[ ! -d $SRC_DIR/alignak-packaging/$PACKAGE/manpages ]] && cp $SRC_DIR/alignak-packaging/$PACKAGE/manpages $SRC_DIR/$PACKAGE
     [[ ! -d $SRC_DIR/alignak-packaging/$PACKAGE/systemd ]] && cp $SRC_DIR/alignak-packaging/$PACKAGE/systemd $SRC_DIR/$PACKAGE
     cp -r $SRC_DIR/alignak-packaging/$PACKAGE/debian $SRC_DIR/$PACKAGE  # This one is required
 
-    VERSION=$(awk -F'\(?\-?' "/$PACKAGE/ {print $2}" $SRC_DIR/$PACKAGE/debian/changelog | head -1)
+    VERSION=$(awk -F'\(?\-?' "/$PACKAGE/ {print \$2}" $SRC_DIR/$PACKAGE/debian/changelog | head -1)
     if is_git_tag $1; then 
         # We only create a "current" version for upstream build
         cd $SRC_DIR/$PACKAGE
@@ -57,7 +58,7 @@ build_package_deb(){
     else
         sed -i "s/-\([0-9]\+\))/-\1~$CODENAME)/g" $SRC_DIR/$PACKAGE/debian/changelog
     fi
-    tar -czf $PACKAGE_$VERSION.orig.tar.gz $PACKAGE
+    tar -czf ${PACKAGE}_${VERSION}.orig.tar.gz $PACKAGE
     cd $SRC_DIR/$PACKAGE
     dpkg-buildpackage
     mv ../$PACKAGE*.deb $OUT_DIR
@@ -66,6 +67,7 @@ build_package_deb(){
 }
 
 build_package_rpm(){
+    cd $SRC_DIR
     [[ ! -d $SRC_DIR/alignak-packaging/$PACKAGE/manpages ]] && cp $SRC_DIR/alignak-packaging/$PACKAGE/manpages $SRC_DIR/$PACKAGE
     [[ ! -d $SRC_DIR/alignak-packaging/$PACKAGE/systemd ]] && cp $SRC_DIR/alignak-packaging/$PACKAGE/systemd $SRC_DIR/$PACKAGE
     cp -r $SRC_DIR/alignak-packaging/$PACKAGE/$PACKAGE.spec $SRC_DIR/$PACKAGE
@@ -79,23 +81,13 @@ build_package_rpm(){
         sed -i "s/\(Release:.*\)$/\1_$RELEASE/g" $SRC_DIR/alignak-packaging/$PACKAGE.spec
     fi
     mkdir -p ~/rpmbuild/SOURCES
-    tar -czf ~/rpmbuild/SOURCES/$PACKAGE-$VERSION.tar.gz $PACKAGE
+    tar -czf ~/rpmbuild/SOURCES/${PACKAGE}-${VERSION}.tar.gz $PACKAGE
     rpmbuild -ba  $SRC_DIR/alignak-packaging/$PACKAGE.spec
     rm -rf ~/rpmbuild/RPMS/x86_64/*debuginfo*.rpm
     new_name=$(basename ~/rpmbuild/RPMS/x86_64/*.rpm | sed "s/\(.*\).x86_64.rpm/\1.$CODENAME.x86_64.rpm/g")
     mv ~/rpmbuild/RPMS/x86_64/*.rpm $OUT_DIR/$new_name
 
     #TODO add rpmlint and grep W|E to count them
-}
-
-prepare_upstream(){
-    cd  $SRC_DIR/alignak-packaging/
-    git fetch origin
-    git checkout -f origin/master -B master
-    cd  $SRC_DIR/$PACKAGE
-    git fetch origin
-    git checkout -f origin/develop -B develop
-
 }
 
 prepare_tag(){
@@ -141,7 +133,6 @@ if [[ ! -d $SRC_DIR/$PACKAGE ]]; then
         git clone $ALIGNAK_CRONTRIB_GIT/$PACKAGE $SRC_DIR/$PACKAGE
     fi
 fi
-
 
 prepare_tag $TAG
 

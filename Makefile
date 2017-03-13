@@ -1,6 +1,6 @@
 PACKAGE ?= "alignak"
 DISTRO ?= ubuntu14 ubuntu16 debian8 centos7
-TAG ?= ""
+TAG ?= "develop"
 SRC_DIR ?= "$$HOME/repos"
 
 build:
@@ -15,5 +15,5 @@ push:
 
 package:
 	for OS in $(DISTRO); do \
-		docker run -e TAG=$(TAG) -e PACKAGE=$(PACKAGE) -v $(SRC_DIR):/root/src/ -v /tmp/build-dir:/root/build-dir  alignak_builder:$$OS bash /root/build-package.sh ;\
+		docker run -e TAG=$(TAG) -e PACKAGE=$(PACKAGE) -v $(SRC_DIR):/root/src/ -v /tmp/build-dir:/root/build-dir  alignak/alignak_builder:$$OS bash /root/build-package.sh ;\
 	done
