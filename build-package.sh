@@ -93,26 +93,28 @@ build_package_rpm(){
 prepare_tag(){
     cd $SRC_DIR/alignak-packaging/
     git fetch origin
-    if is_git_tag $1; then
-      git checkout $1 -B v-$1
-    elif [[ "$1" == "develop" ]]; then
+    if is_git_tag $2; then
+      git checkout $2 -B v-$2
+    elif [[ "$2" != "" ]]; then
       # We have no develop on packaging
-      git checkout -f origin/master -B master
+      git checkout -f origin/$2 -B $2
     else
-      git checkout -f origin/$1 -B $1
+      echo "Not checking out new branch as tag is empty"
     fi
 
     cd $SRC_DIR/$PACKAGE
     git fetch origin
     if is_git_tag $1; then
       git checkout $1 -B v-$1
-    else
+    elif [[ "$2" != "" ]]; then
       git checkout -f origin/$1 -B $1
+    else
+      echo "Not checking out new branch as tag is empty"
     fi
 
 }
 
-# We have a global variable TAG and PACKAGE
+# We have a global variable TAG_SRC, TAG_PACKAGING and PACKAGE
 SYSTEMD_FILES=${SYSTEMD_FILES-1}  # By default we include systemd files
 DISTRO=$(get_distro)
 VERSION=$(get_version)
@@ -134,14 +136,14 @@ if [[ ! -d $SRC_DIR/$PACKAGE ]]; then
     fi
 fi
 
-prepare_tag $TAG
+prepare_tag $TAG_SRC $TAG_PACKAGING
 
 case $DISTRO in
     debian|ubuntu)
-        build_package_deb $TAG
+        build_package_deb $TAG_SRC
         ;;
     fedora|centos|redhat)
-        build_package_rpm $TAG
+        build_package_rpm $TAG_SRC
         ;;
     *)
         exit 1
