@@ -39,13 +39,21 @@ get_codename(){
 }
 
 is_git_tag(){
-   git tag | grep -q "$1"
+  [[ "$1" != "" ]] &&  git tag | grep -q "$1"
 }
+
+ensure_https_remote(){
+  cd $1  # Example $SRC_DIR/alignak-packaging
+  git config --global url."https://".insteadOf git://
+}
+
 
 build_package_deb(){
     cd $SRC_DIR
-    [[ ! -d $SRC_DIR/alignak-packaging/$PACKAGE/manpages ]] && cp $SRC_DIR/alignak-packaging/$PACKAGE/manpages $SRC_DIR/$PACKAGE
-    [[ ! -d $SRC_DIR/alignak-packaging/$PACKAGE/systemd ]] && cp $SRC_DIR/alignak-packaging/$PACKAGE/systemd $SRC_DIR/$PACKAGE
+    [[ -d $SRC_DIR/alignak-packaging/$PACKAGE/manpages ]] && cp -r $SRC_DIR/alignak-packaging/$PACKAGE/manpages $SRC_DIR/$PACKAGE
+    [[ -d $SRC_DIR/alignak-packaging/$PACKAGE/systemd ]] && cp -r $SRC_DIR/alignak-packaging/$PACKAGE/systemd $SRC_DIR/$PACKAGE
+    # For dep package that ship non existing dependencies
+    [[ -d $SRC_DIR/alignak-packaging/$PACKAGE/vendor ]] && cp -r $SRC_DIR/alignak-packaging/$PACKAGE/vendor $SRC_DIR/$PACKAGE
     cp -r $SRC_DIR/alignak-packaging/$PACKAGE/debian $SRC_DIR/$PACKAGE  # This one is required
 
     VERSION=$(awk -F'\(?\-?' "/$PACKAGE/ {print \$2}" $SRC_DIR/$PACKAGE/debian/changelog | head -1)
@@ -68,24 +76,28 @@ build_package_deb(){
 
 build_package_rpm(){
     cd $SRC_DIR
-    [[ ! -d $SRC_DIR/alignak-packaging/$PACKAGE/manpages ]] && cp $SRC_DIR/alignak-packaging/$PACKAGE/manpages $SRC_DIR/$PACKAGE
-    [[ ! -d $SRC_DIR/alignak-packaging/$PACKAGE/systemd ]] && cp $SRC_DIR/alignak-packaging/$PACKAGE/systemd $SRC_DIR/$PACKAGE
+    [[ -d $SRC_DIR/alignak-packaging/$PACKAGE/manpages ]] && cp -r $SRC_DIR/alignak-packaging/$PACKAGE/manpages $SRC_DIR/$PACKAGE
+    [[ -d $SRC_DIR/alignak-packaging/$PACKAGE/systemd ]] && cp -r $SRC_DIR/alignak-packaging/$PACKAGE/systemd $SRC_DIR/$PACKAGE
+    # For dep package that ship non existing dependencies
+    [[ -d $SRC_DIR/alignak-packaging/$PACKAGE/vendor ]] && cp -r $SRC_DIR/alignak-packaging/$PACKAGE/vendor /root/rpmbuild/SOURCES/
     cp -r $SRC_DIR/alignak-packaging/$PACKAGE/$PACKAGE.spec $SRC_DIR/$PACKAGE
 
-    VERSION=$(awk '/Version/ {print $2}' $SRC_DIR/alignak-packaging/$PACKAGE.spec)
+    VERSION=$(awk '/Version/ {print $2}' $SRC_DIR/alignak-packaging/$PACKAGE/$PACKAGE.spec)
     if is_git_tag $1; then
         # We only create a "current" version for upstream build
         cd $PACKAGE
         RELEASE=$(git log -1  --format=%ct_%h)
         cd ../
-        sed -i "s/\(Release:.*\)$/\1_$RELEASE/g" $SRC_DIR/alignak-packaging/$PACKAGE.spec
+        sed -i "s/\(Release:.*\)$/\1_$RELEASE/g" $SRC_DIR/alignak-packaging/$PACKAGE/$PACKAGE.spec
     fi
     mkdir -p ~/rpmbuild/SOURCES
     tar -czf ~/rpmbuild/SOURCES/${PACKAGE}-${VERSION}.tar.gz $PACKAGE
-    rpmbuild -ba  $SRC_DIR/alignak-packaging/$PACKAGE.spec
+    rpmbuild -ba  $SRC_DIR/alignak-packaging/$PACKAGE/$PACKAGE.spec
     rm -rf ~/rpmbuild/RPMS/x86_64/*debuginfo*.rpm
-    new_name=$(basename ~/rpmbuild/RPMS/x86_64/*.rpm | sed "s/\(.*\).x86_64.rpm/\1.$CODENAME.x86_64.rpm/g")
-    mv ~/rpmbuild/RPMS/x86_64/*.rpm $OUT_DIR/$new_name
+    for rpm_file in ~/rpmbuild/RPMS/x86_64/*.rpm; do
+        new_name=$(basename $rpm_file | sed "s/\(.*\).x86_64.rpm/\1.$CODENAME.x86_64.rpm/g")
+        mv $rpm_file $OUT_DIR/$new_name
+    done
 
     #TODO add rpmlint and grep W|E to count them
 }
@@ -96,7 +108,6 @@ prepare_tag(){
     if is_git_tag $2; then
       git checkout $2 -B v-$2
     elif [[ "$2" != "" ]]; then
-      # We have no develop on packaging
       git checkout -f origin/$2 -B $2
     else
       echo "Not checking out new branch as tag is empty"
@@ -119,20 +130,33 @@ SYSTEMD_FILES=${SYSTEMD_FILES-1}  # By default we include systemd files
 DISTRO=$(get_distro)
 VERSION=$(get_version)
 CODENAME=$(get_codename)
+REPOS_DIR=/root/repos
 SRC_DIR=/root/src
 OUT_DIR=/root/build-dir/${DISTRO}_${VERSION}
-mkdir -p $OUT_DIR
 
 ALIGNAK_GIT="https://github.com/Alignak-monitoring"
 ALIGNAK_CRONTRIB_GIT="https://github.com/Alignak-monitoring-contrib"
 
-[[ ! -d $SRC_DIR/alignak-packaging ]] && git clone $ALIGNAK_GIT/alignak-packaging.git $SRC_DIR/alignak-packaging
 
-if [[ ! -d $SRC_DIR/$PACKAGE ]]; then
+[[ -d $SRC_DIR ]] && rm -rf $SRC_DIR/* || mkdir -p $SRC_DIR
+
+mkdir -p $OUT_DIR
+
+if [[ -d $REPOS_DIR/alignak-packaging ]]; then
+    cp -r $REPOS_DIR/alignak-packaging $SRC_DIR/
+    ensure_https_remote $SRC_DIR/alignak-packaging
+else
+    git clone $ALIGNAK_GIT/alignak-packaging.git $SRC_DIR/alignak-packaging
+fi
+
+if [[ -d $REPOS_DIR/$PACKAGE ]]; then
+    cp -r $REPOS_DIR/$PACKAGE $SRC_DIR/
+    ensure_https_remote $SRC_DIR/$PACKAGE
+else
     if [[ $PACKAGE == "alignak" ]]; then
         git clone $ALIGNAK_GIT/alignak.git $SRC_DIR/alignak
     else
-        git clone $ALIGNAK_CRONTRIB_GIT/$PACKAGE $SRC_DIR/$PACKAGE
+        git clone $ALIGNAK_CRONTRIB_GIT/$PACKAGE.git $SRC_DIR/$PACKAGE
     fi
 fi
 

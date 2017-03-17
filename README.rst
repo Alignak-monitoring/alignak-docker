@@ -25,10 +25,10 @@ Build a package
 |               | debian8         | default value. If multiple, use     |
 |               | centos7         | double quotes around the list       |
 +---------------+-----------------+-------------------------------------+
-| SRC_DIR       | $HOME/repos     | Source directory, mounted in docker |
-|               |                 | If $SRC_DIR/$PACKAGE exists, it will|
-|               |                 | use it as src. Else, git clone the  |
-|               |                 | repository from github.             |
+| REPOS_DIR     | $HOME/repos     | Repos directory, mounted in docker  |
+|               |                 | If $REPOS_DIR/$PACKAGE exists, it   |
+|               |                 | will use it as src. Else, git clone |
+|               |                 | the repository from github.         |
 |               |                 | Caution : It will checkout master   |
 |               |                 | uncommited change may be lost       |
 |               |                 | It will also change some permission |
